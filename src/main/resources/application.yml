@@ -1,0 +1,12 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  r2dbc:
+    url: ${ENV_DATABASE}
+    username: postgres
+    password: postgres
+
+  jackson:
+    deserialization:
+      accept-float-as-int: false
