@@ -27,15 +27,12 @@ public class ClienteController {
             throw new ResourceNotFoundException("Cliente não encontrado!");
         }
 
-        return clienteRepository.findById(id).cache()
-                .flatMap(cliente -> {
-                    long valor = "c".equals(transacaoRequest.tipo()) ? transacaoRequest.valor() : (-transacaoRequest.valor());
-                    return clienteRepository.updateClienteSaldo(id, valor)
-                            .flatMap(clienteUpdated -> transacaoRepository.save(
-                                        new Transacao(id, transacaoRequest.valor(), null, transacaoRequest.descricao(), transacaoRequest.tipo())
-                                    ).flatMap(novoSaldo -> Mono.just(new SaldoAtualizado(cliente.limite(), cliente.saldo())))
-                            ).switchIfEmpty(Mono.error(new InconsistentBalanceException("Transação rejeitada")));
-                });
+        long valor = "c".equals(transacaoRequest.tipo()) ? transacaoRequest.valor() : (-transacaoRequest.valor());
+        return clienteRepository.updateClienteSaldo(id, valor)
+                    .flatMap(cliente -> transacaoRepository.save(
+                                new Transacao(id, transacaoRequest.valor(), null, transacaoRequest.descricao(), transacaoRequest.tipo())
+                            ).thenReturn(new SaldoAtualizado(cliente.limite(), cliente.saldo()))
+                    ).switchIfEmpty(Mono.error(new InconsistentBalanceException("Transação rejeitada")));
     }
 
     @GetMapping("clientes/{id}/extrato")
